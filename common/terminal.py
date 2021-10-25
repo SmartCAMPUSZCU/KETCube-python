@@ -187,6 +187,15 @@ def _sendChar(c):
         ser.flush()
         echo = ser.read(1)
         if (echo[0] != byteArr[0]):
+            # tolerate interleaved debug messages
+            if ser.readline():
+                try:
+                    echo = ser.readline()
+                    if echo[-1] == byteArr[0]:
+                        return True
+                except:
+                    pass
+            
             cnt = cnt + 1
             continue
         else:
@@ -308,4 +317,47 @@ def getCmdResp(paramType = None):
         if (line.find("Help for command: ") >= 0):
             print("RETURNED ERROR - inclomplete command!")
             return "ERROR"
+
                 
+## Find a speciffic line or timeout
+#
+# @param string searched-string
+# @timeout; default is 1s
+#
+# @retval True if OK, False if timeout
+#
+def findString(string = None, timeout = 1):
+    global ser, ENDL
+    
+    if ser == None:
+        return "ERROR"
+    
+    if string == None:
+        print("Invalid parameter!")
+        return False
+    
+    timeout = time.time() + timeout
+    
+    while True:
+        if time.time() > timeout:
+            print("TIMEOUT")
+            return False
+        
+        try:
+            # wait or not?
+            if (ser.in_waiting == 0):
+                time.sleep(TIMEOUT)
+                continue
+            
+            line = ser.readline()
+        except:
+            common.exitError()
+            
+        line = _removeCtrlChars(line)
+        #print("Recv: " + line)
+        
+        if re.search(string, line):
+            print("String detected in: " + line)
+            return True
+        
+    return False
