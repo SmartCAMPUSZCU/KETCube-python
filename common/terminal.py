@@ -357,7 +357,7 @@ def findString(string = None, timeout = 1):
             
         line = _removeCtrlChars(line)
         # Print KETCube returns
-        print(">> " + line)
+        print(">> " + line.replace('\n', '').replace('\r', ''))
         
         if re.search(string, line):
             print("String detected in: " + line)
