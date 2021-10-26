@@ -82,8 +82,10 @@ def _removeCtrlChars(line):
     
     line2 = line.decode("utf-8")
     line2 = line2.rstrip(ENDL.decode("utf-8"))
-    line2 = line2.lstrip(ENDL.decode("utf-8"))
+    line2 = line2.rstrip(ENDL.decode("utf-8"))
     line2 = line2.replace(PROMPT.decode("utf-8"), "")
+    line2 = line2.lstrip(ENDL.decode("utf-8"))
+    line2 = line2.lstrip(ENDL.decode("utf-8"))
     line2 = line2.replace('\b', '')
     
     return line2
@@ -288,7 +290,7 @@ def getCmdResp(paramType = None):
             common.exitError()
             
         line = _removeCtrlChars(line)
-        print("Recv: " + line)
+        print(">> " + line)
         
         if (line.find("Command not found!") >= 0):
             print("RETURNED ERROR")
@@ -306,7 +308,7 @@ def getCmdResp(paramType = None):
                     print("Param procesing failed!")
                     return "ERROR"
                 line = _removeCtrlChars(line)
-                print("Recv: " + line)
+                print(">> " + line)
                 return _parseParams(paramType, line)
             return "OK"
             
@@ -354,7 +356,8 @@ def findString(string = None, timeout = 1):
             common.exitError()
             
         line = _removeCtrlChars(line)
-        #print("Recv: " + line)
+        # Print KETCube returns
+        print(">> " + line)
         
         if re.search(string, line):
             print("String detected in: " + line)
