@@ -90,28 +90,6 @@ def _removeCtrlChars(line):
     
     return line2
 
-## Confirm command execution
-#
-# Send ENDL to confirm command execution
-#
-def _sendConfirm():
-    global ser, ENDL
-    
-    cnt = 0
-    
-    while True:
-        if cnt > 3:
-            return False
-        
-        ser.write(ENDL)
-        ser.flush()
-        echo = ser.read(1)
-        if (echo[0] != 0x0A):
-            cnt = cnt + 1
-            continue
-        else:
-            return True
-
 ## Flush Rx Buffer
 #
 def flushRxBuffer():
@@ -190,18 +168,45 @@ def _sendChar(c):
         echo = ser.read(1)
         if (echo[0] != byteArr[0]):
             # tolerate interleaved debug messages
-            if ser.readline():
-                try:
+            try:
+                while True:
                     echo = ser.readline()
-                    if echo[-1] == byteArr[0]:
-                        return True
-                except:
-                    pass
-            
+                    if len(echo) == 0:
+                        break
+                    line = _removeCtrlChars(echo)
+                    lines = line.split('\r')
+                    for line in lines:
+                        if line.find("::") != -1:
+                            # debug line ...
+                            continue
+                        elif line.encode()[-1] == c:
+                            #print("F:" + line)
+                            return True
+                        else:
+                            pass # incorrect line
+            except:
+                break
+                
             cnt = cnt + 1
             continue
         else:
             return True
+
+## Confirm command execution
+#
+# Send ENDL to confirm command execution
+#
+def _sendConfirm():
+    global ser, ENDL
+    
+    ser.write(ENDL)
+    ser.flush()
+    ser.write(ENDL)
+    ser.flush()
+    ser.write(ENDL)
+    ser.flush()
+    
+    return True
 
 ## Send a single command
 #
@@ -209,6 +214,9 @@ def _sendChar(c):
 #
 def sendCommand(cmd):
     global ser, ENDL
+    
+    cnt = 0
+    oldcnt = cnt
     
     _sendConfirm()
     time.sleep(0.1)
@@ -219,13 +227,24 @@ def sendCommand(cmd):
     
     print("Executing cmd: " + cmd)
     try:
-        data = cmd.encode()
-        for b in data:
-            if (_sendChar(b) == False):
-                common.exitError()    
-        
-        if (_sendConfirm() == False):
-            common.exitError()
+        while True:
+            if cnt > 3:
+                common.exitError()
+                
+            oldcnt = cnt
+            data = cmd.encode()
+            for b in data:
+                if (_sendChar(b) == False):
+                    cnt = cnt + 1
+                    break
+            
+            if (oldcnt == cnt):
+                _sendConfirm()
+                break
+            else:
+                _sendConfirm()
+                time.sleep(0.1)
+                flushRxBuffer()
             
     except:
         common.exitError()

@@ -101,7 +101,7 @@ def exitGracefully(signum, frame):
     
 def exitError():
     print("Fatal Error!")
-    exitGracefully(None, None)
+    exit(1)
 
 # Initialize testbench enviroment
 def initEnv():
